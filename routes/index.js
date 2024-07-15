@@ -10,8 +10,9 @@ const videoModel = require('./video')
 
 
 
-router.get('/', isloggedIn, function (req, res, next) {
-  res.render('index', { title: 'Express' });
+router.get('/', isloggedIn,async function (req, res, next) {
+  const videos=await videoModel.find()
+  res.render('index', { title: 'Express',videos });
 });
 
 router.get('/login', (req, res, next) => {
@@ -24,8 +25,11 @@ router.get('/register', (req, res, next) => {
 
 
 
-router.get('/currentVideo', isloggedIn, function (req, res, next) {
-  res.render('currentVideo')
+router.get('/currentVideo/:videoId', isloggedIn,async function (req, res, next) {
+  const currentVideo=await videoModel.findOne({
+    _id:req.params.videoId
+  })
+  res.render('currentVideo',{currentVideo})
 })
 
 router.get('/upload', isloggedIn, (req, res, next) => {
@@ -81,7 +85,9 @@ router.post('/upload', isloggedIn, upload.single('vide_file'), async (req, res, 
 
   const newVideo = await videoModel.create({
     media: req.file.filename,
-    user: req.user._id
+    user: req.user._id,
+    title:req.body.title,
+    description:req.body.description
   })
 
   res.send(newVideo)
