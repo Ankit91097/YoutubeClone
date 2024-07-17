@@ -100,7 +100,32 @@ router.post(
 /* ************** routes for video uploading ******************* */
 /**************** router for streaming ****************** */
 router.get("/stream/:fileName", isloggedIn, async function (req, res, next) {
-  fs.createReadStream(`./public/video/${req.params.fileName}`).pipe(res)
+  const range = req.headers.range;
+  const parts = range.replace('bytes=', "").split("-");
+  let start = parseInt(parts[0], 10);
+  let chunkSize = 1024 * 1024 * 4;
+  let end = start + chunkSize - 1;
+
+  const file = fs.statSync(`./public/video/${req.params.fileName}`);
+  const fileSize = file.size;
+
+  if(end>=fileSize){
+    end=fileSize-1
+    chunkSize=start-end+1
+  }
+
+  const head = {
+    "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+    "Accept-Ranges": "bytes",
+    "Content-Length": chunkSize,
+    "Content-Type": "video/mp4",
+  };
+  res.writeHead(206, head);
+
+  fs.createReadStream(`./public/video/${req.params.fileName}`, {
+    start,
+    end,
+  }).pipe(res);
 });
 
 /**************** router for streaming ****************** */
